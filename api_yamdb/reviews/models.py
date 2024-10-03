@@ -18,6 +18,7 @@ class Category(models.Model):
     name = models.CharField(
         max_length=256,
         verbose_name='Категория',
+        db_index=True,
     )
     slug = models.SlugField(
         max_length=50,
@@ -40,6 +41,7 @@ class Genre(models.Model):
     name = models.CharField(
         max_length=256,
         verbose_name='Жанр',
+        db_index=True,
     )
     slug = models.SlugField(
         max_length=50,
@@ -84,13 +86,15 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
-        verbose_name='Жанр'
+        verbose_name='Жанр',
+        related_name='titles'
 
     )
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
         verbose_name='Категория',
+        related_name='titles',
         null=True
     )
 
@@ -98,7 +102,6 @@ class Title(models.Model):
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
         ordering = ('-year', 'name')
-        related_name='titles'
 
     def __str__(self):
         return self.name[:MAX_LENGHT]
@@ -172,3 +175,11 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text[:MAX_LENGHT]
+    
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.title} принадлежит жанру {self.genre}'
