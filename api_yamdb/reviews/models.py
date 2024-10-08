@@ -1,17 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
 from django.core.validators import (
     MaxValueValidator,
     MinValueValidator,
 )
 from datetime import datetime
 
-
 MAX_LENGHT = 30
 
+
 class UserRole:
-    
+
     USER = 'user'
     MODERATOR = 'moderator'
     ADMIN = 'admin'
@@ -69,7 +68,7 @@ class User(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ['id']
-    
+
     def __str__(self):
         return self.username
 
@@ -154,6 +153,7 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
+        related_name='titles',
         verbose_name='Жанр'
 
     )
@@ -161,6 +161,7 @@ class Title(models.Model):
         Category,
         on_delete=models.SET_NULL,
         verbose_name='Категория',
+        related_name='titles',
         null=True
     )
 
@@ -215,6 +216,12 @@ class Review(models.Model):
         ordering = ['-pub_date']
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
+        constraints = (
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='unique_author_title'
+            ),
+        )
 
     def __str__(self):
         return self.text[:MAX_LENGHT]

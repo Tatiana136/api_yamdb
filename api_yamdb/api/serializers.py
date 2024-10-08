@@ -3,6 +3,13 @@ from reviews.models import User
 from api.validators import validate_username
 from rest_framework.exceptions import ValidationError
 import re
+from reviews.models import (
+    Category,
+    Genre,
+    Title,
+    Comment,
+    Review
+)
 
 USERNAME_REGEX = r'^[\w.@+-]+\Z'
 
@@ -63,3 +70,91 @@ class AdminUserSerializer(serializers.ModelSerializer):
         # это позволит р.к. обрабатывать обновления экз-я
         # с уже проверенными данными.
         return super().update(instance, validated_data)
+
+
+class CategoriesSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Category."""
+
+    class Meta:
+        model = Category
+        fields = ('name', 'slug')
+
+
+class GenresSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Genre."""
+
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+
+
+class TitleGETSerializer(serializers.ModelSerializer):
+    """Сериализатор объектов класса Title при GET запросах."""
+
+    category = CategoriesSerializer(read_only=True)
+    genre = GenresSerializer(many=True, read_only=True)
+    rating = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = '__all__'
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    """Сериализатор объектов класса Title при небезопасных запросах."""
+
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug',
+    )
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(),
+        slug_field='slug',
+        many=True,
+    )
+
+    class Meta:
+        model = Title
+        fields = '__all__'
+
+
+    def to_representation(self, title):
+        serializer = TitleGETSerializer(title)
+        return serializer.data
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели Review."""
+
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True,
+    )
+
+    class Meta:
+        model = Review
+        exclude = ('title',)
+
+    def validate(self, data):
+        if self.context.get('request').method != 'POST':
+            return data
+        author = self.context.get('request').user
+        title_id = self.context.get('view').kwargs.get('title_id')
+        if Review.objects.filter(author=author, title=title_id).exists():
+            raise serializers.ValidationError(
+                'Нельзя оставлять более одного отзыва на это произведение'
+            )
+        return data
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор объектов класса Comment."""
+    
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True,
+    )
+
+    class Meta:
+        model = Comment
+        exclude = ('review',)
