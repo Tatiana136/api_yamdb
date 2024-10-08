@@ -10,6 +10,7 @@ MAX_LENGHT = 30
 
 
 class UserRole:
+    """Модель пользователя."""
 
     USER = 'user'
     MODERATOR = 'moderator'
@@ -22,6 +23,7 @@ class UserRole:
 
 
 class User(AbstractUser):
+    """Модель пользователя."""
 
     email = models.EmailField(
         verbose_name='Адрес электронной почты',
@@ -95,6 +97,7 @@ class Category(models.Model):
     )
 
     class Meta:
+
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
         ordering = ('name',)
@@ -117,6 +120,7 @@ class Genre(models.Model):
     )
 
     class Meta:
+
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
         ordering = ('name',)
@@ -166,6 +170,7 @@ class Title(models.Model):
     )
 
     class Meta:
+
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
         ordering = ('-year', 'name')
@@ -175,6 +180,8 @@ class Title(models.Model):
 
 
 class GenreTitle(models.Model):
+    """Модель жанров."""
+
     genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
     title = models.ForeignKey('Title', on_delete=models.CASCADE)
 
@@ -213,6 +220,7 @@ class Review(models.Model):
     )
 
     class Meta:
+
         ordering = ['-pub_date']
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'

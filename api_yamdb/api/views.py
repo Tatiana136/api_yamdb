@@ -10,17 +10,7 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
-
 from reviews.models import Category, Genre, Title, Review, User
-from api.filters import TitlesFilter
-from api.mixin import CategoryGenreViewSet
-from api.permissions import (
-    IsAdmin,
-    ReadOnly,
-    IsSuperUserIsAdminIsModeratorIsAuthor,
-    IsSuperUserOrIsAdmin
-)
 from api.serializers import (
     TokenSerializer,
     SignupSerializer,
@@ -32,9 +22,19 @@ from api.serializers import (
     CommentSerializer,
     ReviewSerializer,
 )
+from api.permissions import (
+    IsAdmin,
+    ReadOnly,
+    IsSuperUserIsAdminIsModeratorIsAuthor,
+    IsSuperUserOrIsAdmin
+)
+from api.mixin import CategoryGenreViewSet
+from api.filters import TitlesFilter
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """Вьюсет для модели User."""
+
     queryset = User.objects.all()
     serializer_class = AdminUserSerializer
     permission_classes = [IsAdmin]
@@ -42,17 +42,22 @@ class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
+        """Фильтрация на основе search."""
         queryset = super().get_queryset()
         search_query = self.request.query_params.get('search')
         if search_query:
             queryset = queryset.filter(username__icontains=search_query)
         return queryset
-    
-    @action(methods=['GET', 'PATCH'], detail=False, url_path='me', permission_classes=[IsAuthenticated])
+
+    @action(methods=['GET', 'PATCH'], detail=False,
+            url_path='me', permission_classes=[IsAuthenticated])
     def me(self, request):
         """Изменение данных пользователя."""
         if request.method == 'GET':
-            return Response(self.get_serializer(request.user).data, status=status.HTTP_200_OK)
+            return Response(
+                self.get_serializer(request.user).data,
+                status=status.HTTP_200_OK
+            )
         if request.method == 'PATCH':
             serializer = self.get_serializer(
                 request.user,
@@ -60,13 +65,15 @@ class UserViewSet(viewsets.ModelViewSet):
                 partial=True,
             )
             serializer.is_valid(raise_exception=True)
-            serializer.save() # role=request.user.role в скобках добавил ЧДО
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
 def send_confirmation_email(user):
     # default_token_generator - генератор токенов.
-    # Используется для ген-и случайных строк, который можно исп-ть как код подтв-я.
+    # Используется для ген-и случайных строк,
+    # который можно исп-ть как код подтв-я.
     # make_token - результат, случайный токен.
     confirmation_code = default_token_generator.make_token(user)
     subject = 'Код подтверждения'
@@ -74,6 +81,7 @@ def send_confirmation_email(user):
     from_email = settings.EMAIL_HOST_USER
     recipient_list = [user.email]
     return send_mail(subject, message, from_email, recipient_list)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -84,13 +92,16 @@ def signup(request):
     username = serializer.validated_data.get('username')
     email = serializer.validated_data.get('email')
     try:
-        # Проверяем, существует ли пользователь с таким email
         user = User.objects.get(username=username, email=email)
         return Response(status=status.HTTP_200_OK)
     except User.DoesNotExist:
         try:
             user = User.objects.create(username=username, email=email)
-            serializer = SignupSerializer(user, data=request.data, partial=True)
+            serializer = SignupSerializer(
+                user,
+                data=request.data,
+                partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             send_confirmation_email(user)
@@ -110,9 +121,11 @@ def get_token(request):
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
-        return Response({"ERROR": "Пользователь не найден."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"ERROR": "Пользователь не найден."},
+                        status=status.HTTP_404_NOT_FOUND)
     if not user.confirmation_code == confirmation_code:
-        return Response({"ERROR": "Неверный код подтверждения."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"ERROR": "Неверный код подтверждения."},
+                        status=status.HTTP_400_BAD_REQUEST)
     user.is_active = True
     user.save()
     token = AccessToken.for_user(user)
