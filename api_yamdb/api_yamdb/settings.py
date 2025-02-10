@@ -127,7 +127,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 # Директория для хранения файлов писем.
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 

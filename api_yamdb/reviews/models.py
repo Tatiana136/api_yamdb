@@ -7,6 +7,8 @@ from django.core.validators import (
 from datetime import datetime
 
 MAX_LENGHT = 30
+MAX_LEN = 256
+MAX = 150
 
 
 class UserRole:
@@ -32,7 +34,7 @@ class User(AbstractUser):
     )
     username = models.CharField(
         verbose_name='Имя пользователя',
-        max_length=150,
+        max_length=MAX,
         null=True,
         unique=True
     )
@@ -44,12 +46,12 @@ class User(AbstractUser):
     )
     first_name = models.CharField(
         verbose_name='Имя',
-        max_length=150,
+        max_length=MAX,
         blank=True,
     )
     last_name = models.CharField(
         verbose_name='Фамилия',
-        max_length=150,
+        max_length=MAX,
         blank=True,
     )
     bio = models.CharField(
@@ -69,7 +71,7 @@ class User(AbstractUser):
 
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ['id']
+        ordering = ['username']
 
     def __str__(self):
         return self.username
@@ -87,7 +89,7 @@ class Category(models.Model):
     """Модель для категорий."""
 
     name = models.CharField(
-        max_length=256,
+        max_length=MAX_LEN,
         verbose_name='Категория',
     )
     slug = models.SlugField(
@@ -110,7 +112,7 @@ class Genre(models.Model):
     """Модель для жанров."""
 
     name = models.CharField(
-        max_length=256,
+        max_length=MAX_LEN,
         verbose_name='Жанр',
     )
     slug = models.SlugField(
@@ -133,7 +135,7 @@ class Title(models.Model):
     """Модель для произведений."""
 
     name = models.CharField(
-        max_length=150,
+        max_length=MAX,
         verbose_name='Произведение',
     )
     year = models.PositiveIntegerField(
@@ -196,7 +198,7 @@ class Review(models.Model):
         Title,
         on_delete=models.CASCADE,
         related_name='reviews',
-        max_length=256,
+        max_length=MAX_LEN,
         verbose_name='Произведение'
     )
     text = models.TextField(
@@ -212,7 +214,7 @@ class Review(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации'
     )
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         validators=[
             MaxValueValidator(10, 'Оценка не может быть больше 10'),
             MinValueValidator(1, 'Оценка не может быть меньше 1'),
