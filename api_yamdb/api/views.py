@@ -70,19 +70,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-def send_confirmation_email(user):
-    # default_token_generator - генератор токенов.
-    # Используется для ген-и случайных строк,
-    # который можно исп-ть как код подтв-я.
-    # make_token - результат, случайный токен.
-    confirmation_code = default_token_generator.make_token(user)
-    subject = 'Код подтверждения'
-    message = f'Код авторизации: {confirmation_code}'
-    from_email = settings.EMAIL_HOST_USER
-    recipient_list = [user.email]
-    return send_mail(subject, message, from_email, recipient_list)
-
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
@@ -104,10 +91,21 @@ def signup(request):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            send_confirmation_email(user)
+            confirmation_code = default_token_generator.make_token(user)
+            user.confirmation_code = confirmation_code
+            user.save()
+            send_confirmation_email(user, confirmation_code)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+def send_confirmation_email(user, confirmation_code):
+    subject = 'Код подтверждения'
+    message = f'Код авторизации: {confirmation_code}'
+    from_email = settings.EMAIL_HOST_USER
+    recipient_list = [user.email]
+    return send_mail(subject, message, from_email, recipient_list)
 
 
 @api_view(['POST'])
